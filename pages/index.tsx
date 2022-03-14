@@ -5,7 +5,7 @@ import Debug from "../components/Debug";
 import AddSegment from "../components/AddSegment";
 import DeleteSegment from "../components/DeleteSegment";
 import SegmentType from "../components/SegmentType";
-
+import { Exponential, Hyperbolic } from "../lib/declineEquations";
 import { useState } from "react";
 // import { queries } from "@testing-library/react";
 import { isCompositeComponent } from "react-dom/test-utils";
@@ -81,37 +81,6 @@ const App = () => {
   //Create a state to track whether segment has been checked/approved to go into calculator
   const [inputCheck, setInputCheck] = useState([false]);
 
-  const updateInputs = (arr) => {
-    //Copy original segments
-    let copySegments = segments.map((seg) => {
-      return { ...seg };
-    });
-
-    let newSegments = segments.map((seg) => {
-      return { ...seg };
-    });
-
-    newSegments
-      .filter(
-        (seg) =>
-          (countUnknowns(seg.segmentNumber)[0] === 3 &&
-            seg.forecastType === "exponential") ||
-          (countUnknowns(seg.segmentNumber)[0] === 4 &&
-            seg.forecastType === "hyperbolic")
-      )
-      .map((seg, index) => {
-        seg.parameters.map((param, paramIndex) => {
-          param.input = arr[index].parameters[paramIndex];
-        });
-      });
-
-    newSegments.map((seg) => {
-      copySegments[seg.segmentNumber - 1] = seg;
-    });
-
-    return setSegments(copySegments);
-  };
-
   const toggleChangeInput = (symbol, val, segmentNumber) => {
     //Determine parameters to reference
     let params = segments[segmentNumber - 1].parameters;
@@ -147,7 +116,7 @@ const App = () => {
     segCopy = segCopy.map((seg) => {
       if (seg.segmentNumber === segmentNumber) {
         let newParameters = seg.parameters.map((param) => {
-          return { ...param, input: "" };
+          return { ...param, calculate: false, input: undefined };
         });
 
         if (seg.forecastType === "hyperbolic") {
@@ -167,7 +136,8 @@ const App = () => {
         return seg;
       }
     });
-    return setSegments(segCopy);
+
+    setSegments(segCopy);
   };
   const toggleCalculate = (symbol, segmentNumber) => {
     //Determine parameters to reference
@@ -328,7 +298,7 @@ const App = () => {
 
   //Goal of the function: take segments state and:
   //1. Filter out any segments that don't satisfy conditions to be solved
-  //2. For applicable segments, clear out inputs for any paramater where param.calculate === false
+  //2. For applicable segments, clear out inputs for any parameter where param.calculate === false
   const exportParameters = () => {
     //Pulling out just the segments that satisfy conditions to be solved
     let segCopy = segments.filter(
@@ -356,25 +326,79 @@ const App = () => {
     return segCopy;
   };
 
-  // const sendJSON = async () => {
-  //   let url = "http://localhost:8000/solve";
-  //   let data = exportParameters();
-  //   let config = {
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //   };
-  //   console.log("this is the data", data);
-  //   // data = JSON.stringify(data);
+  const updateInputs = (arr) => {
+    //Copy original segments
+    let copySegments = segments.map((seg) => {
+      return { ...seg };
+    });
 
-  //   try {
-  //     const resp = await axios.post(url, data, config);
-  //     console.log("RETURN DATA", resp.data);
-  //     updateInputs(resp.data);
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
+    let newSegments = segments.map((seg) => {
+      return { ...seg };
+    });
+
+    newSegments
+      .filter(
+        (seg) =>
+          (countUnknowns(seg.segmentNumber)[0] === 3 &&
+            seg.forecastType === "exponential") ||
+          (countUnknowns(seg.segmentNumber)[0] === 4 &&
+            seg.forecastType === "hyperbolic")
+      )
+      .map((seg, index) => {
+        seg.parameters.map((param, paramIndex) => {
+          param.input = arr[paramIndex];
+        });
+      });
+
+    newSegments.map((seg) => {
+      copySegments[seg.segmentNumber - 1] = seg;
+    });
+
+    return setSegments(copySegments);
+  };
+
+  const clearInputs = (segmentNumber) => {
+    //Determine parameters to reference
+    let params = segments[segmentNumber - 1].parameters;
+    //Copy parameter, change inputs
+    let newParameters = params.map((parameter) => {
+      var newCalculate = false;
+      var newInput = undefined;
+      return { ...parameter, calculate: newCalculate, input: newInput };
+    });
+
+    //Copy original segments
+    let newSegments = segments.map((seg) => {
+      return { ...seg };
+    });
+    newSegments[segmentNumber - 1].parameters = newParameters;
+
+    console.log(newSegments);
+    return setSegments(newSegments);
+  };
+
+  const calculateParameters = (segments) => {
+    // run exportParameters to filter out segments ready to be calculated
+    var segmentsForCalc = exportParameters();
+
+    segmentsForCalc.map((seg) => {
+      if (seg.forecastType === "exponential") {
+        //Define new object using constructor
+        //Use solveUnknowns method
+        //Use exportToArray method
+        //Use updateInputs function
+      } else if (seg.forecastType === "hyperbolic") {
+        //Define new object using constructor
+        const decline = new Hyperbolic(seg.parameters);
+        //Use solveUnknowns method
+        decline.solveUnknowns();
+        //Use exportToArray method
+        const parameters = decline.exportToArray();
+        updateInputs(parameters);
+        //Use updateInputs function
+      }
+    });
+  };
 
   return (
     <>
@@ -394,11 +418,6 @@ const App = () => {
                     : "flex flex-col w-[450px] h-[450px] items-center"
                 }`}
               >
-                <SegmentType
-                  segment={segments[index]}
-                  changeSegmentType={changeSegmentType}
-                  segmentNumber={segments[index].segmentNumber}
-                />
                 <Parameters
                   key={segments[index].segmentNumber}
                   parameters={segments[index].parameters}
@@ -408,6 +427,8 @@ const App = () => {
                   segment={segments[index]}
                   toggleUnits={toggleUnits}
                   countUnknowns={countUnknowns}
+                  changeSegmentType={changeSegmentType}
+                  clearInputs={clearInputs}
                 />
               </div>
             </div>
@@ -417,7 +438,7 @@ const App = () => {
           <DeleteSegment deleteSegment={deleteSegment} />
           <AddSegment copySegment={copySegment} />
 
-          <Debug exportParameters={exportParameters} />
+          <Debug calculateParameters={calculateParameters} />
         </div>
       </div>
     </>

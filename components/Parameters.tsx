@@ -1,5 +1,5 @@
 import Parameter from "./Parameter";
-
+import SegmentType from "./SegmentType";
 export const Parameters = ({
   parameters,
   onToggle,
@@ -8,11 +8,20 @@ export const Parameters = ({
   segment,
   toggleUnits,
   countUnknowns,
+  changeSegmentType,
+  clearInputs,
 }) => {
   let knownsUnknowns = countUnknowns(segmentNumber);
 
   return (
     <>
+      <SegmentType
+        key={segmentNumber}
+        segment={segment}
+        changeSegmentType={changeSegmentType}
+        clearInputs={clearInputs}
+        segmentNumber={segmentNumber}
+      />
       {parameters.map((parameter) => (
         <Parameter
           parameter={parameter}

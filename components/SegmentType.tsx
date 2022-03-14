@@ -1,8 +1,11 @@
 import React from "react";
 
-export const SegmentType = ({ segment, changeSegmentType, segmentNumber }) => {
-  // need segment number and segments
-
+export const SegmentType = ({
+  segment,
+  changeSegmentType,
+  clearInputs,
+  segmentNumber,
+}) => {
   return (
     <>
       <div className="container w-96 flex flex-col items-center justify-center p-2">
@@ -17,7 +20,7 @@ export const SegmentType = ({ segment, changeSegmentType, segmentNumber }) => {
             onClick={() => {
               segment.forecastType !== "exponential"
                 ? changeSegmentType(segmentNumber)
-                : console.log("hmm");
+                : "";
             }}
           >
             exponential
@@ -31,7 +34,7 @@ export const SegmentType = ({ segment, changeSegmentType, segmentNumber }) => {
             onClick={() => {
               segment.forecastType !== "hyperbolic"
                 ? changeSegmentType(segmentNumber)
-                : console.log("hmm");
+                : "";
             }}
           >
             hyperbolic

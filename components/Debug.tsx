@@ -1,9 +1,9 @@
 import React from "react";
 
-export const Debug = ({ exportParameters }) => {
+export const Debug = ({ calculateParameters }) => {
   return (
     <div>
-      <button className="button" onClick={() => exportParameters()}>
+      <button className="button" onClick={() => calculateParameters()}>
         Debug
       </button>
     </div>

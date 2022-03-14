@@ -25,6 +25,15 @@ export const Parameter = ({
     renderInput = <Unknown parameter={parameter} />;
   }
 
+  var disabledCheckbox = false;
+
+  if (
+    segment.forecastType === "exponential" &&
+    (parameter.symbol === "df" || parameter.symbol === "b")
+  ) {
+    disabledCheckbox = true;
+  }
+
   return (
     <>
       <div
@@ -35,15 +44,18 @@ export const Parameter = ({
             : "flex flex-row flex-auto bg-grey items-center h-8 p-6 w-96"
         }
       >
-        <div className="">
+        <div>
           <input
+            id="check"
             type="checkbox"
-            disabled={
-              segment.forecastType === "exponential" &&
-              (parameter.symbol === "df" || parameter.symbol === "b")
-                ? true
-                : false
-            }
+            // disabled={
+            //   segment.forecastType === "exponential" &&
+            //   (parameter.symbol === "df" || parameter.symbol === "b")
+            //     ? disabled
+            //     : ""
+            // }
+            disabled={disabledCheckbox}
+            checked={parameter.calculate}
             onClick={() => {
               onToggle(parameter.symbol, segmentNumber);
             }}
@@ -53,6 +65,7 @@ export const Parameter = ({
         <div className="text-white text-xl w-10 text-center">
           {parameter.symbol}
         </div>
+
         {renderInput}
         <div className="container">
           <div
