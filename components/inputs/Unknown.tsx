@@ -6,12 +6,7 @@ export const Unknown = ({ parameter }) => {
   return (
     <div className="w-28">
       <form className="container">
-        <input
-          type="number"
-          value={parameter.input}
-          className="w-24"
-          readOnly
-        />
+        <input type="text" value={parameter.input} className="w-24" readOnly />
       </form>
     </div>
   );

@@ -7,12 +7,9 @@ export const Parameters = ({
   segmentNumber,
   segment,
   toggleUnits,
-  countUnknowns,
   changeSegmentType,
   clearInputs,
 }) => {
-  let knownsUnknowns = countUnknowns(segmentNumber);
-
   return (
     <>
       <SegmentType

@@ -4,6 +4,7 @@ import Calculate from "../components/Calculate";
 import Debug from "../components/Debug";
 import AddSegment from "../components/AddSegment";
 import DeleteSegment from "../components/DeleteSegment";
+import ClearInputs from "../components/ClearInputs";
 import SegmentType from "../components/SegmentType";
 import { Exponential, Hyperbolic } from "../lib/declineEquations";
 import { useState } from "react";
@@ -20,6 +21,9 @@ const App = () => {
       product: "oil",
       segmentNumber: 1,
       forecastType: "exponential",
+      unknownsCount: 0,
+      canCalcUnknowns: false,
+      errMessage: "",
       parameters: [
         {
           text: "Initial Flow Rate",
@@ -116,7 +120,7 @@ const App = () => {
     segCopy = segCopy.map((seg) => {
       if (seg.segmentNumber === segmentNumber) {
         let newParameters = seg.parameters.map((param) => {
-          return { ...param, calculate: false, input: undefined };
+          return { ...param, calculate: false, input: "" };
         });
 
         if (seg.forecastType === "hyperbolic") {
@@ -273,43 +277,41 @@ const App = () => {
     setInputCheck(inputCheckCopy);
   };
 
-  const countUnknowns = (segmentNumber) => {
-    let knownsCount = 0;
+  const countUnknowns = (segment) => {
+    let unknowns = [];
     let unknownsCount = 0;
 
     //Determine parameters to reference
-    let params = segments[segmentNumber - 1].parameters;
 
-    params.map((parameter) => {
-      if (
-        parameter.calculate === true &&
-        parameter.input !== undefined &&
-        !isNaN(parameter.input) &&
-        parameter.input != ""
-      ) {
-        knownsCount += 1;
-      } else {
-        unknownsCount += 1;
-      }
-    });
+    let params = segment.parameters;
 
-    return [knownsCount, unknownsCount];
+    //For exponential
+
+    if (segment.forecastType === "exponential") {
+      let excludeParams = ["b", "df"];
+      params
+        .filter((param) => !excludeParams.includes(param.symbol))
+        .map((param) => {
+          if (!param.calculate) {
+            unknownsCount += 1;
+          }
+        });
+
+      // For hyperbolic
+    } else if (segment.forecastType === "hyperbolic") {
+      params.map((param) => {
+        if (!param.calculate) {
+          unknownsCount += 1;
+        }
+      });
+    }
+
+    console.log(`this is the unknown count ${unknownsCount}`);
+    return unknownsCount;
   };
 
-  //Goal of the function: take segments state and:
-  //1. Filter out any segments that don't satisfy conditions to be solved
-  //2. For applicable segments, clear out inputs for any parameter where param.calculate === false
-  const exportParameters = () => {
-    //Pulling out just the segments that satisfy conditions to be solved
-    let segCopy = segments.filter(
-      (seg) =>
-        (countUnknowns(seg.segmentNumber)[0] === 3 &&
-          seg.forecastType === "exponential") ||
-        (countUnknowns(seg.segmentNumber)[0] === 4 &&
-          seg.forecastType === "hyperbolic")
-    );
-
-    segCopy = segCopy.map((seg) => {
+  const clearInputs = (copySegments) => {
+    copySegments = copySegments.map((seg) => {
       let newParameters = seg.parameters.map((param) => {
         if (param.calculate === false) {
           return { ...param, input: undefined };
@@ -317,87 +319,128 @@ const App = () => {
           return { ...param };
         }
       });
-      let newSeg = { ...seg, parameters: newParameters };
 
-      return newSeg;
+      return { ...seg, parameters: newParameters };
     });
-
-    setSegments(segCopy);
-    return segCopy;
+    return copySegments;
   };
 
-  const updateInputs = (arr) => {
+  const segmentsCheck = () => {
     //Copy original segments
     let copySegments = segments.map((seg) => {
       return { ...seg };
     });
 
-    let newSegments = segments.map((seg) => {
-      return { ...seg };
-    });
+    //map through segments, run tests on each segment
+    copySegments = copySegments.map((seg) => {
+      //Run countUnknowns function
 
-    newSegments
-      .filter(
-        (seg) =>
-          (countUnknowns(seg.segmentNumber)[0] === 3 &&
-            seg.forecastType === "exponential") ||
-          (countUnknowns(seg.segmentNumber)[0] === 4 &&
-            seg.forecastType === "hyperbolic")
-      )
-      .map((seg, index) => {
-        seg.parameters.map((param, paramIndex) => {
-          param.input = arr[paramIndex];
+      let unknownsCount = countUnknowns(seg);
+      let errorMessage = [];
+      let canCalcUnknowns = false;
+      // Checking if all 'Known' parameters are numbers
+      seg.parameters
+        .filter((param) => param.calculate)
+        .map((param) => {
+          if (typeof param.input !== "number") {
+            errorMessage.push(
+              `Parameter ${param.symbol} value ${param.input} is not a valid number`
+            );
+          }
         });
-      });
 
-    newSegments.map((seg) => {
-      copySegments[seg.segmentNumber - 1] = seg;
-    });
-
-    return setSegments(copySegments);
-  };
-
-  const clearInputs = (segmentNumber) => {
-    //Determine parameters to reference
-    let params = segments[segmentNumber - 1].parameters;
-    //Copy parameter, change inputs
-    let newParameters = params.map((parameter) => {
-      var newCalculate = false;
-      var newInput = undefined;
-      return { ...parameter, calculate: newCalculate, input: newInput };
-    });
-
-    //Copy original segments
-    let newSegments = segments.map((seg) => {
-      return { ...seg };
-    });
-    newSegments[segmentNumber - 1].parameters = newParameters;
-
-    console.log(newSegments);
-    return setSegments(newSegments);
-  };
-
-  const calculateParameters = (segments) => {
-    // run exportParameters to filter out segments ready to be calculated
-    var segmentsForCalc = exportParameters();
-
-    segmentsForCalc.map((seg) => {
-      if (seg.forecastType === "exponential") {
-        //Define new object using constructor
-        //Use solveUnknowns method
-        //Use exportToArray method
-        //Use updateInputs function
-      } else if (seg.forecastType === "hyperbolic") {
-        //Define new object using constructor
-        const decline = new Hyperbolic(seg.parameters);
-        //Use solveUnknowns method
-        decline.solveUnknowns();
-        //Use exportToArray method
-        const parameters = decline.exportToArray();
-        updateInputs(parameters);
-        //Use updateInputs function
+      //Check if correct amount of Knowns are specified (3 for hyperb)
+      if (seg.forecastType === "exponential" && unknownsCount !== 2) {
+        errorMessage.push(
+          `Invalid combination of knowns and unknowns specified: Expecting 3 knowns, was provided ${
+            5 - unknownsCount
+          }`
+        );
+      }
+      if (seg.forecastType === "hyperbolic" && unknownsCount === 3) {
+        errorMessage.push(
+          `Invalid combination of knowns and unknowns specified: Expecting 3 knowns, was provided ${
+            5 - unknownsCount
+          }`
+        );
+      }
+      // If no errors, set canCalcUnknowns flag to true
+      if (errorMessage.length === 0) {
+        return {
+          ...seg,
+          canCalcUnknowns: true,
+          errMessage: errorMessage,
+        };
+      } else {
+        return {
+          ...seg,
+          canCalcUnknowns: false,
+          errMessage: errorMessage,
+        };
       }
     });
+
+    console.log("end of segmentsCheck");
+    console.log(copySegments);
+    return copySegments;
+  };
+
+  const calculateParameters = () => {
+    console.log(`this is the current state inside calculateParameters`);
+    console.log(segments);
+    let copySegments = segmentsCheck();
+    copySegments = clearInputs(copySegments);
+    console.log("after running clearInputs");
+    console.log(copySegments);
+
+    copySegments = copySegments.map((seg) => {
+      let newParameters;
+      if (seg.canCalcUnknowns === true) {
+        if (seg.forecastType === "exponential") {
+          console.log("here");
+          console.log(seg.parameters);
+          //Define new object using constructor
+          const decline = new Exponential(seg.parameters);
+          //Use solveUnknowns method
+          decline.solveUnknowns();
+          console.log(decline);
+          //Use exportToArray method
+          const parameters = decline.exportToArray();
+          console.log("solved decline");
+          console.log(parameters);
+
+          // Map through parameters and replace with new parameters
+          newParameters = seg.parameters.map((param, index) => {
+            return { ...param, input: parameters[index] };
+          });
+        } else if (seg.forecastType === "hyperbolic") {
+          //Define new object using constructor
+          const decline = new Hyperbolic(seg.parameters);
+          //Use solveUnknowns method
+          decline.solveUnknowns();
+          //Use exportToArray method
+          const parameters = decline.exportToArray();
+
+          // Map through parameters and replace with new parameters
+          newParameters = seg.parameters.map((param, index) => {
+            return { ...param, input: parameters[index] };
+          });
+        }
+      } else {
+        newParameters = seg.parameters.map((param) => {
+          if (!param.calculate) {
+            return { ...param, input: "" };
+          } else {
+            return { ...param };
+          }
+        });
+      }
+      console.log(newParameters);
+      return { ...seg, parameters: newParameters };
+    });
+
+    console.log(copySegments);
+    setSegments(copySegments);
   };
 
   return (
@@ -410,14 +453,11 @@ const App = () => {
         </div>
         <div className="flex flex-row space-x-8 pt-4">
           {segments.map((segment, index) => (
-            <div className="flex flex-col bg-med-grey justify-center items-center max-w-md">
-              <div
-                className={`${
-                  countUnknowns(segment.segmentNumber)[0] === 3
-                    ? "flex flex-col w-[450px] h-[450px] items-center"
-                    : "flex flex-col w-[450px] h-[450px] items-center"
-                }`}
-              >
+            <div
+              key={index}
+              className="flex flex-col bg-med-grey justify-center items-center max-w-md"
+            >
+              <div className="flex flex-col w-[450px] h-[450px] items-center">
                 <Parameters
                   key={segments[index].segmentNumber}
                   parameters={segments[index].parameters}
@@ -426,7 +466,6 @@ const App = () => {
                   segmentNumber={segments[index].segmentNumber}
                   segment={segments[index]}
                   toggleUnits={toggleUnits}
-                  countUnknowns={countUnknowns}
                   changeSegmentType={changeSegmentType}
                   clearInputs={clearInputs}
                 />
@@ -438,7 +477,12 @@ const App = () => {
           <DeleteSegment deleteSegment={deleteSegment} />
           <AddSegment copySegment={copySegment} />
 
-          <Debug calculateParameters={calculateParameters} />
+          <Debug
+            calculateParameters={calculateParameters}
+            segments={segments}
+            segmentsCheck={segmentsCheck}
+            countUnknowns={countUnknowns}
+          />
         </div>
       </div>
     </>
