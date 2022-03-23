@@ -1,10 +1,13 @@
 import React from "react";
 
-export const Calculate = ({ countUnknowns, exportParameters, sendJSON }) => {
+export const Calculate = ({ calculateParameters }) => {
   return (
     <div>
-      <button className="button" onClick={() => sendJSON()}>
-        Calculate
+      <button
+        className="text-light-grey hover:text-dark-grey"
+        onClick={() => calculateParameters()}
+      >
+        <div className="text-xl ">Calculate</div>
       </button>
     </div>
   );

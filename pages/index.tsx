@@ -4,6 +4,7 @@ import Calculate from "../components/Calculate";
 import Debug from "../components/Debug";
 import AddSegment from "../components/AddSegment";
 import DeleteSegment from "../components/DeleteSegment";
+import ErrorMessage from "../components/ErrorMessage";
 import ClearInputs from "../components/ClearInputs";
 import SegmentType from "../components/SegmentType";
 import { Exponential, Hyperbolic } from "../lib/declineEquations";
@@ -234,7 +235,12 @@ const App = () => {
     });
 
     //Copy the last object in the array
-    let newSegment = { ...segments[segments.length - 1] };
+    let newSegment = {
+      ...segments[segments.length - 1],
+      canCalcUnknowns: false,
+      errMessage: [],
+      forecastType: "exponential",
+    };
 
     //Define new parameters, zero out the inputs
     let newParameters = newSegment.parameters.map((parameter) => {
@@ -397,21 +403,17 @@ const App = () => {
       let newParameters;
       if (seg.canCalcUnknowns === true) {
         if (seg.forecastType === "exponential") {
-          console.log("here");
-          console.log(seg.parameters);
           //Define new object using constructor
           const decline = new Exponential(seg.parameters);
           //Use solveUnknowns method
           decline.solveUnknowns();
-          console.log(decline);
+
           //Use exportToArray method
           const parameters = decline.exportToArray();
-          console.log("solved decline");
-          console.log(parameters);
 
           // Map through parameters and replace with new parameters
           newParameters = seg.parameters.map((param, index) => {
-            return { ...param, input: parameters[index] };
+            return { ...param, input: parameters[index].toFixed(3) };
           });
         } else if (seg.forecastType === "hyperbolic") {
           //Define new object using constructor
@@ -423,7 +425,7 @@ const App = () => {
 
           // Map through parameters and replace with new parameters
           newParameters = seg.parameters.map((param, index) => {
-            return { ...param, input: parameters[index] };
+            return { ...param, input: parameters[index].ToFixed(3) };
           });
         }
       } else {
@@ -457,7 +459,7 @@ const App = () => {
               key={index}
               className="flex flex-col bg-med-grey justify-center items-center max-w-md"
             >
-              <div className="flex flex-col w-[450px] h-[450px] items-center">
+              <div className="flex flex-col w-[450px] h-auto items-center">
                 <Parameters
                   key={segments[index].segmentNumber}
                   parameters={segments[index].parameters}
@@ -469,20 +471,19 @@ const App = () => {
                   changeSegmentType={changeSegmentType}
                   clearInputs={clearInputs}
                 />
+                <div className="h-auto items-center justify-center">
+                  <ErrorMessage segment={segments[index]} />
+                </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex flex-row bg-med-grey w-[450px] h-[50px] items-center justify-center">
+
+        <div className="flex flex-row bg-med-grey w-[450px] h-[100px] items-center justify-center my-4 space-x-5">
           <DeleteSegment deleteSegment={deleteSegment} />
           <AddSegment copySegment={copySegment} />
 
-          <Debug
-            calculateParameters={calculateParameters}
-            segments={segments}
-            segmentsCheck={segmentsCheck}
-            countUnknowns={countUnknowns}
-          />
+          <Calculate calculateParameters={calculateParameters} />
         </div>
       </div>
     </>

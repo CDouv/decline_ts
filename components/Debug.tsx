@@ -1,11 +1,6 @@
 import React from "react";
 
-export const Debug = ({
-  calculateParameters,
-  segmentsCheck,
-  segments,
-  countUnknowns,
-}) => {
+export const Debug = ({ calculateParameters }) => {
   return (
     <div>
       <button className="button" onClick={() => calculateParameters()}>
